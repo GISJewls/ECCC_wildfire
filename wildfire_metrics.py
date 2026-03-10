@@ -178,7 +178,7 @@ def FireStatistics(args):
 
     except:
         tbinfo = traceback.format_tb(sys.exc_info()[2])[0]
-        error('\nPYTHON ERRORS in main():'
+        error('\nPYTHON ERRORS in FireStatistics():'
               '\nTraceback Info:    ' + tbinfo +
               '\nError Type:    ' + str(sys.exc_info()[0]) +
               '\nError Info:    ' + str(sys.exc_info()[1]),
