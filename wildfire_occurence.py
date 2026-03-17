@@ -2,7 +2,7 @@
 #                            Wildfire Occurence
 #----------------------------------------------------------------------------------
 # SCRIPT NAME:  wildfire_occurence.py
-#               v.2026.0311
+#               v.2026.0316
 #
 # PURPOSE:      Calculate wildfire occurence over a time range
 #
@@ -60,12 +60,12 @@ try:
     log.write('\n\n' + '=' * 89 + '\nTool Started on: ' +
                 str(starttime.strftime('%d-%b-%Y %I:%M %p')) + '\n')
 except:
-    error('Problem opening or writing to the polymetrics_log.txt file')
+    error('Problem opening or writing to the wildfire_occurence_log.txt file')
 
 #----------------------------------------------------------------------------------
 # Fire Metrics
 #==================================================================================
-def CombineRasters(args):
+def WildfireOccurence(args):
     try:
         # Only proceed if the required ArcGIS licenses are available
         if CheckArcInfo() == "yes" and CheckSpatialExt() == "yes":
@@ -95,7 +95,7 @@ def CombineRasters(args):
             # ANALYSIS
             #==================================================================
             # -----------------------------------------------------------------
-            # Step 1: combine intenstiy rasters to determine which cells were
+            # Step 1: combine intensity rasters to determine which cells were
             #         identified as salvaged, while retaining the intensity
             # -----------------------------------------------------------------
             display(' ... Creating binary raster', log)
@@ -111,7 +111,7 @@ def CombineRasters(args):
                 in_features = src_aoi,
                 value_field = src_aoi_fld,
                 out_rasterdataset = aoiRst,
-                cell_assignment = 'MAXIMUM_COMBINED_AREA'
+                cell_assignment = 'CELL_CENTER'
             )
 
             display(' ... Analysing zonal statistics', log)
@@ -146,4 +146,4 @@ def CombineRasters(args):
 
 
 if __name__ == '__main__':
-    CombineRasters(sys.argv)
+    WildfireOccurence(sys.argv)

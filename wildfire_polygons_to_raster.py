@@ -2,7 +2,7 @@
 #            Wildfire Metrics: Area Burned and Annual Wildfire Rasters
 #----------------------------------------------------------------------------------
 # SCRIPT NAME:  wildfire_polygons_to_raster.py
-#               v.2026.0313
+#               v.2026.0316
 #
 # PURPOSE:      Calculate wildfire metrics within defined caribou zones.
 #
@@ -62,7 +62,7 @@ try:
     log.write('\n\n' + '=' * 89 + '\nTool Started on: ' +
                 str(starttime.strftime('%d-%b-%Y %I:%M %p')) + '\n')
 except:
-    error('Problem opening or writing to the polymetrics_log.txt file')
+    error('Problem opening or writing to the polygons_to_raster_log.txt file')
 
 #----------------------------------------------------------------------------------
 # Fire Metrics
@@ -100,6 +100,10 @@ def WildfirePolygonsToRaster(args):
             snapRst = arcpy.GetParameterAsText(7)
             csvWksp = arcpy.GetParameterAsText(8)
 
+            # set main script variables
+            tblwksp = r"W:\Caribou\Projects\2025_ECCCFire\GIS_Analysis\outputs\table_outputs.gdb"
+            tempFC = fp(tblwksp, 'FC_pi')
+
             #======================================================================
             # Test naming conventions
             #----------------------------------------------------------------------
@@ -114,7 +118,7 @@ def WildfirePolygonsToRaster(args):
             #----------------------------------------------------------------------
             arcpy.env.workspace = outWksp
             arcpy.env.extent = aoi
-            arcpy.env.mask = aoi
+            #arcpy.env.mask = aoi
             arcpy.env.snapRaster = snapRst
             arcpy.env.cellSize = snapRst
 
@@ -147,13 +151,17 @@ def WildfirePolygonsToRaster(args):
 
                 display('\n ... Processing for wildfire year ' + str(wfYear), log)
 
+                # define output variables
+                statTable = fp(tblwksp, wfPrefix + '_' + str(wfYear) + '_sumArea')
+                outRst = fp(outWksp, wfPrefix + '_' + str(wfYear))
+                rstTable = fp(outWksp, wfPrefix + '_' + str(wfYear) + '_tbl')
+
                 # -----------------------------------------------------------------
                 # Step 1: Pairwise Intersect aoi with wildfire polgyons
                 # -----------------------------------------------------------------
                 display('     - Intersecting aoi polygons with wildfires', log)
 
                 inFeatures = [aoi, wildfires]
-                tempFC = r'memory\FC_pi'
                 arcpy.analysis.PairwiseIntersect(inFeatures, tempFC, 'ALL')
 
                 # check if any results exist
@@ -168,8 +176,14 @@ def WildfirePolygonsToRaster(args):
                     # -------------------------------------------------------------
                     # Step 2: Add and calculate new fields
                     # -------------------------------------------------------------
-                    statTable = wfPrefix + '_' + str(wfYear) + '_sumArea'
                     display('     - Adding new fields to polygon layer', log)
+
+                    # repair any geometry issues
+                    arcpy.management.RepairGeometry(
+                        in_features = tempFC,
+                        delete_null = "DELETE_NULL",
+                        validation_method = "ESRI"
+                    )
 
                     # Add and calculate 'AREA_KM2' in square kilometers
                     arcpy.management.AddField(
@@ -228,14 +242,14 @@ def WildfirePolygonsToRaster(args):
                     # -------------------------------------------------------------
                     display('     - Converting polygons to raster: ' +
                             wfPrefix + '_' + str(wfYear), log)
-                    outRst = fp(outWksp, wfPrefix + '_' + str(wfYear))
 
-                    arcpy.conversion.PolygonToRaster(
-                        in_features = tempFC,
-                        value_field = fld,
-                        out_rasterdataset = outRst,
-                        cell_assignment = 'MAXIMUM_COMBINED_AREA'
-                    )
+                    with arcpy.EnvManager(autoCommit = 1000):
+                        arcpy.conversion.PolygonToRaster(
+                            in_features = tempFC,
+                            value_field = fld,
+                            out_rasterdataset = outRst,
+                            cell_assignment = 'CELL_CENTER'
+                        )
 
                     # -------------------------------------------------------------
                     # Step 5: Add new fields to raster attribute table
@@ -246,7 +260,6 @@ def WildfirePolygonsToRaster(args):
                     # Create a copy of the raster table as a workaround.
                     # Working directly from the raster table created unknown and
                     # (at the time) unsolvable errors
-                    rstTable = fp(outWksp, wfPrefix + '_' + str(wfYear) + '_tbl')
                     arcpy.conversion.ExportTable(
                         in_table = outRst,
                         out_table = rstTable

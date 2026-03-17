@@ -2,7 +2,7 @@
 #              Wildfire Metrics: Convert AOI polygon to raster
 #----------------------------------------------------------------------------------
 # SCRIPT NAME:  aoi_polygon_to_raster.py
-#               v.2026.0311
+#               v.2026.0316
 #
 # PURPOSE:      Create herd range rasters from polygons and calculate raster
 #               areas.
@@ -58,7 +58,7 @@ try:
     log.write('\n\n' + '=' * 89 + '\nTool Started on: ' +
                 str(starttime.strftime('%d-%b-%Y %I:%M %p')) + '\n')
 except:
-    error('Problem opening or writing to the polymetrics_log.txt file')
+    error('Problem opening or writing to the aoi_polygon_to_raster_log.txt file')
 
 #----------------------------------------------------------------------------------
 # Fire Metrics
@@ -101,7 +101,7 @@ def HerdPolygons(args):
                 in_features = aoi,
                 value_field = aoi_fld,
                 out_rasterdataset = outRst,
-                cell_assignment = 'MAXIMUM_COMBINED_AREA'
+                cell_assignment = 'CELL_CENTER'
             )
 
             display(' ... Adding fields to output table', log)
@@ -125,15 +125,6 @@ def HerdPolygons(args):
                 in_table = outRst,
                 out_table = tblExport
             )
-
-##            # -----------------------------------------------------------------
-##            # Step 2: Export polygon FC to csv
-##            # -----------------------------------------------------------------
-##            display('     - Exporting raster attributes to csv')
-##            arcpy.conversion.ExportTable(
-##                in_table = aoi,
-##                out_table = aoiExport
-##            )
 
             log.close()
 
