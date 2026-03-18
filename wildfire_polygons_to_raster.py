@@ -2,7 +2,7 @@
 #            Wildfire Metrics: Area Burned and Annual Wildfire Rasters
 #----------------------------------------------------------------------------------
 # SCRIPT NAME:  wildfire_polygons_to_raster.py
-#               v.2026.0316
+#               v.2026.0317
 #
 # PURPOSE:      Calculate wildfire metrics within defined caribou zones.
 #
@@ -101,7 +101,7 @@ def WildfirePolygonsToRaster(args):
             csvWksp = arcpy.GetParameterAsText(8)
 
             # set main script variables
-            tblwksp = r"W:\Caribou\Projects\2025_ECCCFire\GIS_Analysis\outputs\table_outputs.gdb"
+            tblwksp = r"W:\Caribou\Projects\x2025_ECCCFire\GIS_Analysis\outputs\table_outputs.gdb"
             tempFC = fp(tblwksp, 'FC_pi')
 
             #======================================================================
@@ -243,13 +243,16 @@ def WildfirePolygonsToRaster(args):
                     display('     - Converting polygons to raster: ' +
                             wfPrefix + '_' + str(wfYear), log)
 
-                    with arcpy.EnvManager(autoCommit = 1000):
-                        arcpy.conversion.PolygonToRaster(
-                            in_features = tempFC,
-                            value_field = fld,
-                            out_rasterdataset = outRst,
-                            cell_assignment = 'CELL_CENTER'
-                        )
+                    memRst = r'memory\xtempRst'
+                    arcpy.conversion.FeatureToRaster(
+                        in_features  = tempFC,
+                        field = fld,
+                        out_raster = memRst,
+                        cell_size = arcpy.env.cellSize
+                    )
+
+                    arcpy.Raster(memRst).save(outRst)
+                    arcpy.management.Delete(memRst)
 
                     # -------------------------------------------------------------
                     # Step 5: Add new fields to raster attribute table
