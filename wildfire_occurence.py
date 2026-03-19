@@ -2,7 +2,7 @@
 #                            Wildfire Occurence
 #----------------------------------------------------------------------------------
 # SCRIPT NAME:  wildfire_occurence.py
-#               v.2026.0316
+#               v.2026.0319
 #
 # PURPOSE:      Calculate wildfire occurence over a time range
 #
@@ -141,7 +141,7 @@ def WildfireOccurence(args):
         error('\nPYTHON ERRORS in CombineRasters():'
               '\nTraceback Info:    ' + tbinfo +
               '\nError Type:    ' + str(sys.exc_info()[0]) +
-              '\nError Info:    ' + str(sys.exc_info()[1]))
+              '\nError Info:    ' + str(sys.exc_info()[1]), log)
         log.close()
 
 

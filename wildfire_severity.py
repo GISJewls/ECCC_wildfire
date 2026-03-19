@@ -2,7 +2,7 @@
 #                       Wildfire Metrics: Severity
 #----------------------------------------------------------------------------------
 # SCRIPT NAME:  wildfire_severity.py
-#               v.2026.0318
+#               v.2026.0319
 #
 # PURPOSE:      Calculate wildfire severity within defined caribou zones.
 #
@@ -25,7 +25,7 @@
 #
 # EDITORS:      Julie Duval, fRI Research
 #
-# LAST UPDATES: March 9, 2026
+# LAST UPDATES: March 19, 2026
 #
 # NOTES:        tested with ArcGIS PRO 3.6.2
 #               requires Advanced licensing with Spatial Analyst extension
@@ -96,7 +96,7 @@ def WildfireSeverity(args):
             src_salv_naming = arcpy.GetParameterAsText(5)
             start_year = int(arcpy.GetParameterAsText(6))
             end_year = int(arcpy.GetParameterAsText(7))
-            tblExport = arcpy.GetParameterAsText(8)
+            outFolder = arcpy.GetParameterAsText(8)
 
             for rstYear in range(start_year, end_year + 1):
                 display('\n ===== Processing wildfire year ' +
@@ -104,6 +104,7 @@ def WildfireSeverity(args):
 
                 rst_fire = fp(src_fire,
                               src_fire_naming.replace('****', str(rstYear)))
+                tblExport = fp(outFolder, 'fire_severity_' + str(rstYear) + '.csv')
 
                 # check if wildfire raster exists
                 if arcpy.Exists(rst_fire):
@@ -132,12 +133,13 @@ def WildfireSeverity(args):
                                             'Value = 11')
 
                     # combine severity rasters
-                    display(' ... Combining severity rasters', log)
+                    display(' ... Combining severity and salvage rasters', log)
                     severity = arcpy.Raster(rst_severity)
-                    rst_sevxsalv = arcpy.sa.Combine([severity, salvage])
+                    with arcpy.EnvManager(workspace = 'memory'):
+                        rst_sevxsalv = arcpy.sa.Combine([severity, salvage])
 
                     # create raster layer
-                    display(' ... Creating raster layer', log)
+                    ##display(' ... Creating raster layer', log)
                     arcpy.management.MakeRasterLayer(
                         in_raster = rst_sevxsalv,
                         out_rasterlayer = 'rst_sevxsalv_lyr'
@@ -145,10 +147,10 @@ def WildfireSeverity(args):
 
                     # identify field names
                     resultFields = arcpy.ListFields('rst_sevxsalv_lyr')
-                    intRstName = resultFields[3].name
+                    sevRstName = resultFields[3].name
                     salvRstName = resultFields[4].name
 
-                    display(' ... Adding fields to output table', log)
+                    ##display(' ... Adding fields to attribute table', log)
                     # add output fields
                     fld_desc = [['SEVERITY', 'SHORT'],
                                 ['SALVAGE', 'SHORT']]
@@ -158,10 +160,10 @@ def WildfireSeverity(args):
                         field_description = fld_desc
                     )
 
-                    exprList = ['!{}!'.format(intRstName),
+                    exprList = ['!{}!'.format(sevRstName),
                                 '!{}!'.format(salvRstName)]
 
-                    display(' ... Calclating new fields', log)
+                    ##display(' ... Populating new attributes', log)
                     # calculate fields
                     for i in range(0, len(fld_desc)):
                         arcpy.management.CalculateField(
@@ -173,21 +175,20 @@ def WildfireSeverity(args):
                     # drop fields
                     arcpy.management.DeleteField(
                         in_table = rst_sevxsalv,
-                        drop_field = [intRstName, salvRstName],
+                        drop_field = [sevRstName, salvRstName],
                         method = 'DELETE_FIELDS'
                     )
 
                     # -------------------------------------------------------------
-                    # Step 2: combine fire bondary with severity values
+                    # Step 2: combine fire boundary with severity values
                     # -------------------------------------------------------------
                     display(' ... Combining fire and severity rasters', log)
 
                     # combine fire and severity rasters
                     rst_combined = arcpy.sa.Combine([rst_fire, rst_sevxsalv])
 
-                    display(' ... Adding new fields to output table', log)
-
                     # add output fields
+                    ##display(' ... Adding new fields to output table', log)
                     fld_desc = [['HERD_YEAR_FIREID', 'TEXT', '', 50],
                                 ['SEVERITY', 'SHORT'],
                                 ['SALVAGE', 'SHORT']]
@@ -197,7 +198,7 @@ def WildfireSeverity(args):
                         field_description = fld_desc
                     )
 
-                    display(' ... Populatinhg new fields', log)
+                    ##display(' ... Populatinhg new fields', log)
                     # create raster layer
                     arcpy.management.MakeRasterLayer(
                         in_raster = rst_combined,
@@ -208,9 +209,11 @@ def WildfireSeverity(args):
                     resultFields = arcpy.ListFields('rst_combo_lyr')
                     rst1Name = resultFields[3].name
                     rst2Name = resultFields[4].name
+                    display('raster 1 name: ' + rst1Name +
+                            '\nraster 2 name: ' + rst2Name)
 
-                    display(' ... Joining fire table and calculating values', log)
                     # join tables - with wildfire raster
+                    display(' ... Joining fire table and calculating values', log)
                     join_table = arcpy.management.AddJoin(
                         in_layer_or_view = 'rst_combo_lyr',
                         in_field = rst1Name,
@@ -220,17 +223,22 @@ def WildfireSeverity(args):
 
                     # grab field name for combo table
                     flds = arcpy.ListFields(join_table)
+                    for fld in flds:
+                        display(fld.name, log)
                     combo_prefix = flds[0].name.split('.')[0]
                     jointbl_prefix = flds[len(flds)-1].name.split('.')[0]
+                    display('combo prefix: ' + combo_prefix)
+                    display('joint table prefix: ' + jointbl_prefix)
 
                     # define expressions for calculation
                     expr = '!{}!'.format(jointbl_prefix + '.HERD_YEAR_FIREID')
+                    display('expression: ' + expr)
 
                     # calculate fields in combo table
                     fld = combo_prefix + '.' + fld_desc[i][0]
                     arcpy.management.CalculateField(
                         in_table = join_table,
-                        field = 'HERD_YEAR_FIREID',
+                        field = fld,
                         expression = expr
                     )
 
@@ -249,8 +257,12 @@ def WildfireSeverity(args):
 
                     # grab field name for combo table
                     flds = arcpy.ListFields(join_table)
+                    for fld in flds:
+                        display(fld.name, log)
                     combo_prefix = flds[0].name.split('.')[0]
                     jointbl_prefix = flds[len(flds)-1].name.split('.')[0]
+                    display('combo prefix: ' + combo_prefix)
+                    display('joint table prefix: ' + jointbl_prefix)
 
                     fldList = ['SEVERITY', 'SALVAGE']
                     exprList = ['!{}!'.format(jointbl_prefix + '.SEVERITY'),
@@ -278,7 +290,7 @@ def WildfireSeverity(args):
                     # -------------------------------------------------------------
                     # Step 3: Export table to csv file
                     # -------------------------------------------------------------
-                    display(' ... Exporting table to csv', log)
+                    display(' ... Exporting combined table to csv', log)
 
                     arcpy.conversion.ExportTable(
                         in_table = rst_combined,
@@ -298,7 +310,7 @@ def WildfireSeverity(args):
         error('\nPYTHON ERRORS in CombineRasters():'
               '\nTraceback Info:    ' + tbinfo +
               '\nError Type:    ' + str(sys.exc_info()[0]) +
-              '\nError Info:    ' + str(sys.exc_info()[1]))
+              '\nError Info:    ' + str(sys.exc_info()[1]), log)
         log.close()
 
         # release data in memory
