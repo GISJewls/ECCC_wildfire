@@ -2,7 +2,7 @@
 #              Wildfire Metrics: Convert AOI polygon to raster
 #----------------------------------------------------------------------------------
 # SCRIPT NAME:  aoi_polygon_to_raster.py
-#               v.2026.0316
+#               v.2026.0317
 #
 # PURPOSE:      Create herd range rasters from polygons and calculate raster
 #               areas.
@@ -51,14 +51,15 @@ global log
 # Set up file to save display log for user
 #----------------------------------------------------------------------------------
 try:
+    logname = 'aoi_polygon_to_raster_log.txt'
     fpath = os.path.split(sys.path[0])[0]
     starttime = datetime.datetime.now()
-    logFile = fp(fpath, 'aoi_polygon_to_raster_log.txt')
+    logFile = fp(fpath, logname)
     log = open(logFile, 'a')
     log.write('\n\n' + '=' * 89 + '\nTool Started on: ' +
                 str(starttime.strftime('%d-%b-%Y %I:%M %p')) + '\n')
 except:
-    error('Problem opening or writing to the aoi_polygon_to_raster_log.txt file')
+    error('Problem opening or writing to the ' + logname + ' file')
 
 #----------------------------------------------------------------------------------
 # Fire Metrics

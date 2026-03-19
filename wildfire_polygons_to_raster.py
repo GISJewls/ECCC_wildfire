@@ -101,8 +101,7 @@ def WildfirePolygonsToRaster(args):
             csvWksp = arcpy.GetParameterAsText(8)
 
             # set main script variables
-            tblwksp = r"W:\Caribou\Projects\x2025_ECCCFire\GIS_Analysis\outputs\table_outputs.gdb"
-            tempFC = fp(tblwksp, 'FC_pi')
+            tempFC = fp(outWksp, 'FC_pi')
 
             #======================================================================
             # Test naming conventions
@@ -152,7 +151,7 @@ def WildfirePolygonsToRaster(args):
                 display('\n ... Processing for wildfire year ' + str(wfYear), log)
 
                 # define output variables
-                statTable = fp(tblwksp, wfPrefix + '_' + str(wfYear) + '_sumArea')
+                statTable = 'memory\\' + wfPrefix + '_' + str(wfYear) + '_sumArea'
                 outRst = fp(outWksp, wfPrefix + '_' + str(wfYear))
                 rstTable = fp(outWksp, wfPrefix + '_' + str(wfYear) + '_tbl')
 

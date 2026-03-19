@@ -65,7 +65,7 @@ except:
 #----------------------------------------------------------------------------------
 # Fire Metrics
 #==================================================================================
-def SeverityRasters(args):
+def WildfireSeverity(args):
     try:
         # Only proceed if the required ArcGIS licenses are available
         if CheckArcInfo() == "yes" and CheckSpatialExt() == "yes":
@@ -90,31 +90,33 @@ def SeverityRasters(args):
             # inputs
             src_fire = arcpy.GetParameterAsText(0)
             src_fire_naming = arcpy.GetParameterAsText(1)
-            src_int = arcpy.GetParameterAsText(2)
-            src_int_naming = arcpy.GetParameterAsText(3)
+            src_sev = arcpy.GetParameterAsText(2)
+            src_sev_naming = arcpy.GetParameterAsText(3)
             src_salv = arcpy.GetParameterAsText(4)
             src_salv_naming = arcpy.GetParameterAsText(5)
-            start_year = arcpy.GetParameterAsText(6)
-            end_year = arcpy.GetParameterAsText(7)
+            start_year = int(arcpy.GetParameterAsText(6))
+            end_year = int(arcpy.GetParameterAsText(7))
             tblExport = arcpy.GetParameterAsText(8)
 
             for rstYear in range(start_year, end_year + 1):
-                display(' ===== Processing wildfire year ' +
+                display('\n ===== Processing wildfire year ' +
                          str(rstYear) + ' =====', log)
 
-                rst_fire = fp(src_fire, src_fire_naming.replace('****', rstYear))
+                rst_fire = fp(src_fire,
+                              src_fire_naming.replace('****', str(rstYear)))
 
                 # check if wildfire raster exists
                 if arcpy.Exists(rst_fire):
-                    rst_severity = fp(src_int,
-                                       src_int_naming.replace('****', rstYear))
+                    rst_severity = fp(src_sev,
+                                   src_sev_naming.replace('****', str(rstYear)))
                     rst_salvage = fp(src_salv,
-                                     src_salv_naming.replace('****', rstYear))
+                                   src_salv_naming.replace('****', str(rstYear)))
 
                     #==============================================================
                     # Processing Environment
                     #--------------------------------------------------------------
                     arcpy.env.extent = rst_fire
+                    arcpy.env.workspace = arcpy.env.scratchGDB
 
                     #==============================================================
                     # ANALYSIS
@@ -124,23 +126,25 @@ def SeverityRasters(args):
                     #         were identified as salvaged, while retaining the
                     #         severity
                     # -------------------------------------------------------------
-                    display(' ... Isolating salvage harvest values', log)
                     # isolate salvage harvest values
+                    display(' ... Isolating salvage harvest values', log)
                     salvage = arcpy.sa.Con(arcpy.Raster(rst_salvage), 1, 0,
                                             'Value = 11')
 
-                    display(' ... Combining severity rasters', log)
                     # combine severity rasters
-                    rst_intxsalv = arcpy.sa.Combine([rst_severity, salvage])
+                    display(' ... Combining severity rasters', log)
+                    severity = arcpy.Raster(rst_severity)
+                    rst_sevxsalv = arcpy.sa.Combine([severity, salvage])
 
                     # create raster layer
+                    display(' ... Creating raster layer', log)
                     arcpy.management.MakeRasterLayer(
-                        in_raster = rst_intxsalv,
-                        out_rasterlayer = 'rst_intxsalv_lyr'
+                        in_raster = rst_sevxsalv,
+                        out_rasterlayer = 'rst_sevxsalv_lyr'
                     )
 
                     # identify field names
-                    resultFields = arcpy.ListFields('rst_intxsalv_lyr')
+                    resultFields = arcpy.ListFields('rst_sevxsalv_lyr')
                     intRstName = resultFields[3].name
                     salvRstName = resultFields[4].name
 
@@ -150,7 +154,7 @@ def SeverityRasters(args):
                                 ['SALVAGE', 'SHORT']]
 
                     arcpy.management.AddFields(
-                        in_table = 'rst_intxsalv_lyr',
+                        in_table = 'rst_sevxsalv_lyr',
                         field_description = fld_desc
                     )
 
@@ -161,14 +165,14 @@ def SeverityRasters(args):
                     # calculate fields
                     for i in range(0, len(fld_desc)):
                         arcpy.management.CalculateField(
-                            in_table = 'rst_intxsalv_lyr',
+                            in_table = 'rst_sevxsalv_lyr',
                             field = fld_desc[i][0],
                             expression = exprList[i]
                         )
 
                     # drop fields
                     arcpy.management.DeleteField(
-                        in_table = rst_intxsalv,
+                        in_table = rst_sevxsalv,
                         drop_field = [intRstName, salvRstName],
                         method = 'DELETE_FIELDS'
                     )
@@ -179,7 +183,7 @@ def SeverityRasters(args):
                     display(' ... Combining fire and severity rasters', log)
 
                     # combine fire and severity rasters
-                    rst_combined = arcpy.sa.Combine([rst_fire, rst_intxsalv])
+                    rst_combined = arcpy.sa.Combine([rst_fire, rst_sevxsalv])
 
                     display(' ... Adding new fields to output table', log)
 
@@ -239,7 +243,7 @@ def SeverityRasters(args):
                     join_table = arcpy.management.AddJoin(
                         in_layer_or_view = 'rst_combo_lyr',
                         in_field = rst2Name,
-                        join_table = rst_intxsalv,
+                        join_table = rst_sevxsalv,
                         join_field = 'Value'
                     )
 
@@ -282,7 +286,7 @@ def SeverityRasters(args):
                     )
 
                     # delete temporary rasters
-                    for rst in [rst_combined, rst_intxsalv]:
+                    for rst in [rst_combined, rst_sevxsalv]:
                         if arcpy.Exists(rst): arcpy.management.Delete(rst)
                     arcpy.management.ClearWorkspaceCache()
 
@@ -298,9 +302,9 @@ def SeverityRasters(args):
         log.close()
 
         # release data in memory
-        for rst in [rst_combined, rst_intxsalv]:
+        for rst in [rst_combined, rst_sevxsalv]:
             if arcpy.Exists(rst): arcpy.management.Delete(rst)
         arcpy.management.ClearWorkspaceCache()
 
 if __name__ == '__main__':
-    SeverityRasters(sys.argv)
+    WildfireSeverity(sys.argv)

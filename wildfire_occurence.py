@@ -88,8 +88,8 @@ def WildfireOccurence(args):
             # Processing Environment
             #------------------------------------------------------------------
             arcpy.env.extent = src_aoi
-            arcpy.env.snapRaster = snapRst
-            arcpy.env.cellSize = snapRst
+            arcpy.env.snapRaster = src_fire
+            arcpy.env.cellSize = src_fire
 
             #==================================================================
             # ANALYSIS
@@ -100,18 +100,18 @@ def WildfireOccurence(args):
             # -----------------------------------------------------------------
             display(' ... Creating binary raster', log)
             # create binary raster
-            expr = 'Value >= ' + str(minYear) + 'and Value <= ' + str(maxYear)
+            expr = 'Value >= ' + minYear + 'and Value <= ' + maxYear
             binaryRst = arcpy.sa.Con(arcpy.Raster(src_fire), 1, 0, expr)
 
             display(' ... Converting polygons to raster', log)
             aoiRst = r'memory\aoiRst'
             outTbl = r'memory\tempTable'
 
-            arcpy.conversion.PolygonToRaster(
-                in_features = src_aoi,
-                value_field = src_aoi_fld,
-                out_rasterdataset = aoiRst,
-                cell_assignment = 'CELL_CENTER'
+            arcpy.conversion.FeatureToRaster(
+                in_features  = src_aoi,
+                field = src_aoi_fld,
+                out_raster = aoiRst,
+                cell_size = arcpy.env.cellSize
             )
 
             display(' ... Analysing zonal statistics', log)
