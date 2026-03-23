@@ -2,15 +2,15 @@
 #            Wildfire Metrics: Area Burned and Annual Wildfire Rasters
 #----------------------------------------------------------------------------------
 # SCRIPT NAME:  wildfire_polygons_to_raster.py
-#               v.2026.0317
+#               v.2026.0323
 #
-# PURPOSE:      Calculate wildfire metrics within defined caribou zones.
+# PURPOSE:      Calculate wildfire metrics (area) within defined caribou zones.
 #
 # ARGUMENTS:    name        Type    Input Description
 #              --------------------------------------------------------------------
 #               aoi         <R>     Area of interest (herd boundaries)
 #               aoi_fld     <R>     Unique field from aoi
-#               wildfireList <R>     Annual wildfire data, polygons (multiple)
+#               wildfireList <R>    Annual wildfire data, polygons (multiple)
 #               wf_year_fld <R>     Wildfire year, field
 #               wf_id_fld   <R>     Wildfire identifier, field
 #               wfPrefix    <R>     Prefix used for outputs, string
@@ -23,8 +23,6 @@
 # AUTHOR:       Julie Duval, fRI Research
 #
 # CREATED ON:   February 20th, 2026
-#
-# EDITORS:      Julie Duval, fRI Research
 #
 # LAST UPDATES: March 3, 2026
 #               March 13, 2026  - debugging and improving code
@@ -99,6 +97,17 @@ def WildfirePolygonsToRaster(args):
             outWksp = arcpy.GetParameterAsText(6)
             snapRst = arcpy.GetParameterAsText(7)
             csvWksp = arcpy.GetParameterAsText(8)
+
+            display('\nArea of interest:        ' + aoi +
+                    '\nField to define AOI:     ' + aoi_fld +
+                    '\n# of wildfire layers:    ' + str(len(wildfireList)) +
+                    '\nWildfire year field:     ' + wf_year_fld +
+                    '\nWildfire ID field:       ' + wf_id_fld +
+                    '\nOuptut prefix            ' + wfPrefix +
+                    '\nOutput workspace         ' + outWksp +
+                    '\nSnap raster              ' + snapRst +
+                    '\nOutput folder - tables:  ' + csvWksp +
+                    '\n\n', log)
 
             # set main script variables
             tempFC = fp(outWksp, 'FC_pi')

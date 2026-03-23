@@ -2,28 +2,24 @@
 #                            Wildfire Occurence
 #----------------------------------------------------------------------------------
 # SCRIPT NAME:  wildfire_occurence.py
-#               v.2026.0319
+#               v.2026.0323
 #
 # PURPOSE:      Calculate wildfire occurence over a time range
 #
 # ARGUMENTS:    name        Type    Input Description
 #              --------------------------------------------------------------------
-#               aoi         <R>     Area of interest (herd boundaries)
-#               aoi_fld     <R>     Unique field from aoi
-#               wildfires   <R>     Annual wildfire data, polygons
-#               wfYear      <R>     Wildfire year, integer
-#               wfPrefix    <R>     Prefix used for outputs, string
-#               outWksp     <R>     Output workspace
-#               snapRst     <O>     Snap raster
-#               outCellSize <R>     Output raster cell size, default = 30m
+#               src_fire    <R>     Soucre wildfire raster
+#               src_aoi     <R>     Area of interest (herd boundaries)
+#               src_aoi_fld <R>     Unique field from aoi
+#               minYear     <R>     Minimum year
+#               maxYear     <R>     Maximum year
+#               tblExport   <R>     Export table name and location
 #
 # OUTPUTS:      combines annual wildfire intensity with annual wildfire rasters
 #
 # AUTHOR:       Julie Duval, fRI Research
 #
 # CREATED ON:   March 11, 2026
-#
-# EDITORS:      Julie Duval, fRI Research
 #
 # LAST UPDATES:
 #
@@ -79,10 +75,17 @@ def WildfireOccurence(args):
             src_fire = arcpy.GetParameterAsText(0)
             src_aoi = arcpy.GetParameterAsText(1)
             src_aoi_fld = arcpy.GetParameterAsText(2)
-            snapRst = arcpy.GetParameterAsText(3)
-            minYear = arcpy.GetParameterAsText(4)
-            maxYear = arcpy.GetParameterAsText(5)
-            tblExport = arcpy.GetParameterAsText(6)
+            minYear = arcpy.GetParameterAsText(3)
+            maxYear = arcpy.GetParameterAsText(4)
+            tblExport = arcpy.GetParameterAsText(5)
+
+            display('\nWildfire raster:         ' + src_fire +
+                    '\nArea of interest:        ' + src_aoi +
+                    '\nArea of interest field:  ' + src_aoi_fld +
+                    '\nMinimum Year:            ' + minYear +
+                    '\nMaximum Year:            ' + maxYear +
+                    '\nExport table:            ' + tblExport +
+                    '\n\n', log)
 
             #==================================================================
             # Processing Environment
@@ -98,12 +101,14 @@ def WildfireOccurence(args):
             # Step 1: combine intensity rasters to determine which cells were
             #         identified as salvaged, while retaining the intensity
             # -----------------------------------------------------------------
-            display(' ... Creating binary raster', log)
+            display(' ... Creating binary raster where year >= ' + minYear +
+                    ' and year <= ' + maxYear, log)
+
             # create binary raster
-            expr = 'Value >= ' + minYear + 'and Value <= ' + maxYear
+            expr = 'Value >= ' + minYear + ' and Value <= ' + maxYear
             binaryRst = arcpy.sa.Con(arcpy.Raster(src_fire), 1, 0, expr)
 
-            display(' ... Converting polygons to raster', log)
+            display(' ... Converting aoi polygons to raster', log)
             aoiRst = r'memory\aoiRst'
             outTbl = r'memory\tempTable'
 

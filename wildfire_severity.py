@@ -1,10 +1,11 @@
 #----------------------------------------------------------------------------------
-#                       Wildfire Metrics: Severity
+#                             Wildfire Severity
 #----------------------------------------------------------------------------------
 # SCRIPT NAME:  wildfire_severity.py
-#               v.2026.0320
+#               v.2026.0323
 #
-# PURPOSE:      Calculate wildfire severity within defined caribou zones.
+# PURPOSE:      Extracts wildfire severity within defined caribou zones.  Overlaps
+#               with annual widlfire rasters.
 #
 # ARGUMENTS:    name        Type    Input Description
 #              --------------------------------------------------------------------
@@ -23,8 +24,6 @@
 # AUTHOR:       Julie Duval, fRI Research
 #
 # CREATED ON:   February 20th, 2026
-#
-# EDITORS:      Julie Duval, fRI Research
 #
 # LAST UPDATES: March 20, 2026
 #
@@ -86,6 +85,18 @@ def WildfireSeverity(args):
             start_year = int(arcpy.GetParameterAsText(6))
             end_year = int(arcpy.GetParameterAsText(7))
             outFolder = arcpy.GetParameterAsText(8)
+
+            display('\nAnnual wildfires:        ' + src_fire +
+                    '\nTemplate name:           ' + src_fire_naming +
+                    '\nAnnual severity rasters: ' + src_sev +
+                    '\nTemplate name:           ' + src_sev_naming +
+                    '\nAnnual salvage rasters:  ' + src_salv +
+                    '\nTemplate name:           ' + src_salv_naming +
+                    '\nWildfire start year:     ' + start_year +
+                    '\nWildfire end year:       ' + end_year +
+                    '\nExport folder:           ' + outFolder +
+                    '\n\n', log)
+
 
             for rstYear in range(start_year, end_year + 1):
                 display('\n ===== Processing wildfire year ' +

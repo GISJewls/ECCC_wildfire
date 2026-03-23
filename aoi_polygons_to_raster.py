@@ -1,8 +1,8 @@
 #----------------------------------------------------------------------------------
-#              Wildfire Metrics: Convert AOI polygon to raster
+#                       Convert AOI Polygons to Raster
 #----------------------------------------------------------------------------------
 # SCRIPT NAME:  aoi_polygon_to_raster.py
-#               v.2026.0317
+#               v.2026.0323
 #
 # PURPOSE:      Create herd range rasters from polygons and calculate raster
 #               areas.
@@ -11,17 +11,14 @@
 #              --------------------------------------------------------------------
 #               aoi         <R>     Area of interest (herd boundaries)
 #               aoi_fld     <R>     Unique field from aoi
-#               outWksp     <R>     Output workspace
-#               snapRst     <O>     Snap raster
-#               outCellSize <R>     Output raster cell size, default = 30m
+#               snapRst     <R>     Snap raster
+#               tblExport   <R>     Output table name and location
 #
 # OUTPUTS:      summary table with area
 #
 # AUTHOR:       Julie Duval, fRI Research
 #
 # CREATED ON:   March 10th, 2026
-#
-# EDITORS:      Julie Duval, fRI Research
 #
 # LAST UPDATES: March 10, 2026
 #

@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------------------
-#            Wildfire Metrics: Combine output csv files
+#                       Combine Output csv Files
 #----------------------------------------------------------------------------------
 # SCRIPT NAME:  combine_output_files.py
 #               v.2026.0317
@@ -12,8 +12,6 @@
 #
 # CREATED ON:   March 3, 2026
 #
-# EDITORS:      Julie Duval, fRI Research
-#
 # LAST UPDATES: March 17, 2026
 #
 # NOTES:        tested with ArcGIS PRO 3.6.2
@@ -24,12 +22,13 @@
 import os, sys
 import csv
 from os.path import join as fp
+from functions import display, error, warning
 
 def main():
     #======================================================================
     # Read user-defined parameters
     # ---------------------------------------------------------------------
-    display(' ... Reading user inputs', log)
+    display(' ... Reading user inputs')
 
     # inputs
     combined_output_path = arcpy.GetParameterAsText(0)
