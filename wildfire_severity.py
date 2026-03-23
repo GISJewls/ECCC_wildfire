@@ -2,20 +2,21 @@
 #                       Wildfire Metrics: Severity
 #----------------------------------------------------------------------------------
 # SCRIPT NAME:  wildfire_severity.py
-#               v.2026.0319
+#               v.2026.0320
 #
 # PURPOSE:      Calculate wildfire severity within defined caribou zones.
 #
 # ARGUMENTS:    name        Type    Input Description
 #              --------------------------------------------------------------------
-#               aoi         <R>     Area of interest (herd boundaries)
-#               aoi_fld     <R>     Unique field from aoi
-#               wildfires   <R>     Annual wildfire data, polygons
-#               wfYear      <R>     Wildfire year, integer
-#               wfPrefix    <R>     Prefix used for outputs, string
-#               outWksp     <R>     Output workspace
-#               snapRst     <O>     Snap raster
-#               outCellSize <R>     Output raster cell size, default = 30m
+#               src_fire    <R>     Source fire raster
+#               src_fire_naming <R> Fire raster naming template
+#               src_sev     <R>     Source severity raster
+#               src_sev_naming  <R> Severity raster naming template
+#               src_salv    <R>     Post-harvest salvage raster
+#               src_salv_naming <R> Salvage raster naming template
+#               start_year  <R>     Start year
+#               end_year    <R>     End year
+#               outFolder   <R>     Output folder for csv files
 #
 # OUTPUTS:      combines annual wildfire severity with annual wildfire rasters
 #
@@ -25,7 +26,7 @@
 #
 # EDITORS:      Julie Duval, fRI Research
 #
-# LAST UPDATES: March 19, 2026
+# LAST UPDATES: March 20, 2026
 #
 # NOTES:        tested with ArcGIS PRO 3.6.2
 #               requires Advanced licensing with Spatial Analyst extension
@@ -71,18 +72,6 @@ def WildfireSeverity(args):
         if CheckArcInfo() == "yes" and CheckSpatialExt() == "yes":
 
             #======================================================================
-            # Warn users that projections should match
-            #----------------------------------------------------------------------
-            display(
-                '\n' + "*" * 60 + '\n'
-                'Please verify spatial reference systems (SRS). \n'
-                'Outputs will default to the SRS of the Wildfires layer. \n'
-                'If the spatial references do not match, please reproject \n'
-                'the input layers and rerun the tool. '
-                '\n' + "*" * 60 + '\n', log
-            )
-
-            #======================================================================
             # Read user-defined parameters
             # ---------------------------------------------------------------------
             display(' ... Reading user inputs', log)
@@ -104,7 +93,10 @@ def WildfireSeverity(args):
 
                 rst_fire = fp(src_fire,
                               src_fire_naming.replace('****', str(rstYear)))
-                tblExport = fp(outFolder, 'fire_severity_' + str(rstYear) + '.csv')
+                tblExport = fp(outFolder,
+                    'fire_severity_' +
+                    src_fire_naming.replace('****',  str(rstYear)) + '.csv'
+                )
 
                 # check if wildfire raster exists
                 if arcpy.Exists(rst_fire):
@@ -139,7 +131,6 @@ def WildfireSeverity(args):
                         rst_sevxsalv = arcpy.sa.Combine([severity, salvage])
 
                     # create raster layer
-                    ##display(' ... Creating raster layer', log)
                     arcpy.management.MakeRasterLayer(
                         in_raster = rst_sevxsalv,
                         out_rasterlayer = 'rst_sevxsalv_lyr'
@@ -150,8 +141,7 @@ def WildfireSeverity(args):
                     sevRstName = resultFields[3].name
                     salvRstName = resultFields[4].name
 
-                    ##display(' ... Adding fields to attribute table', log)
-                    # add output fields
+                    # add new fields
                     fld_desc = [['SEVERITY', 'SHORT'],
                                 ['SALVAGE', 'SHORT']]
 
@@ -163,7 +153,6 @@ def WildfireSeverity(args):
                     exprList = ['!{}!'.format(sevRstName),
                                 '!{}!'.format(salvRstName)]
 
-                    ##display(' ... Populating new attributes', log)
                     # calculate fields
                     for i in range(0, len(fld_desc)):
                         arcpy.management.CalculateField(
@@ -187,18 +176,21 @@ def WildfireSeverity(args):
                     # combine fire and severity rasters
                     rst_combined = arcpy.sa.Combine([rst_fire, rst_sevxsalv])
 
-                    # add output fields
-                    ##display(' ... Adding new fields to output table', log)
+                    # add new output fields
                     fld_desc = [['HERD_YEAR_FIREID', 'TEXT', '', 50],
+                                ['HERD', 'TEXT', '', 20],
+                                ['PROV', 'TEXT', '', 20],
+                                ['YEAR', 'SHORT'],
+                                ['FIREID', 'SHORT'],
                                 ['SEVERITY', 'SHORT'],
-                                ['SALVAGE', 'SHORT']]
+                                ['SALVAGE', 'SHORT'],
+                                ['RAST_AREA_KM2', 'DOUBLE']]
 
                     arcpy.management.AddFields(
                         in_table = rst_combined,
                         field_description = fld_desc
                     )
 
-                    ##display(' ... Populatinhg new fields', log)
                     # create raster layer
                     arcpy.management.MakeRasterLayer(
                         in_raster = rst_combined,
@@ -209,11 +201,10 @@ def WildfireSeverity(args):
                     resultFields = arcpy.ListFields('rst_combo_lyr')
                     rst1Name = resultFields[3].name
                     rst2Name = resultFields[4].name
-                    display('raster 1 name: ' + rst1Name +
-                            '\nraster 2 name: ' + rst2Name)
 
                     # join tables - with wildfire raster
                     display(' ... Joining fire table and calculating values', log)
+
                     join_table = arcpy.management.AddJoin(
                         in_layer_or_view = 'rst_combo_lyr',
                         in_field = rst1Name,
@@ -223,31 +214,40 @@ def WildfireSeverity(args):
 
                     # grab field name for combo table
                     flds = arcpy.ListFields(join_table)
-                    for fld in flds:
-                        display(fld.name, log)
                     combo_prefix = flds[0].name.split('.')[0]
-                    jointbl_prefix = flds[len(flds)-1].name.split('.')[0]
-                    display('combo prefix: ' + combo_prefix)
-                    display('joint table prefix: ' + jointbl_prefix)
+                    jtbl_prefix = flds[len(flds)-1].name.split('.')[0]
+
+                    # field names to calculate
+                    fldNames = ['HERD_YEAR_FIREID', 'HERD', 'PROV', 'YEAR',
+                                'FIREID', 'RAST_AREA_KM2']
 
                     # define expressions for calculation
-                    expr = '!{}!'.format(jointbl_prefix + '.HERD_YEAR_FIREID')
-                    display('expression: ' + expr)
+                    jtbl_fld = jtbl_prefix + '.HERD_YEAR_FIREID'
+                    exprList = [
+                        '!{}!'.format(jtbl_fld),
+                        '!{}!.split("_")[0]'.format(jtbl_fld),
+                        '!{}!.split("_")[1]'.format(jtbl_fld),
+                        'int(!{}!.split("_")[2])'.format(jtbl_fld),
+                        'int(!{}!.split("_")[3])'.format(jtbl_fld),
+                        '!{}! * 0.0009'.format(str(combo_prefix + '.Count'))
+                    ]
 
-                    # calculate fields in combo table
-                    fld = combo_prefix + '.' + fld_desc[i][0]
-                    arcpy.management.CalculateField(
-                        in_table = join_table,
-                        field = fld,
-                        expression = expr
-                    )
+                    # loop to calculate fields
+                    for i in range(0, len(fldNames)):
+                        arcpy.management.CalculateField(
+                            in_table = join_table,
+                            field = combo_prefix + '.' + fldNames[i],
+                            expression = exprList[i]
+                        )
 
                     # remove join
                     arcpy.management.RemoveJoin('rst_combo_lyr')
 
+                    # -------------------------------------------------------------
+                    # join tables - with wildfire severity raster
                     display(' ... Joining severity table and '
                             'calculating values', log)
-                    # join tables - with wildfire severity raster
+
                     join_table = arcpy.management.AddJoin(
                         in_layer_or_view = 'rst_combo_lyr',
                         in_field = rst2Name,
@@ -257,16 +257,12 @@ def WildfireSeverity(args):
 
                     # grab field name for combo table
                     flds = arcpy.ListFields(join_table)
-                    for fld in flds:
-                        display(fld.name, log)
                     combo_prefix = flds[0].name.split('.')[0]
-                    jointbl_prefix = flds[len(flds)-1].name.split('.')[0]
-                    display('combo prefix: ' + combo_prefix)
-                    display('joint table prefix: ' + jointbl_prefix)
+                    jtbl_prefix = flds[len(flds)-1].name.split('.')[0]
 
                     fldList = ['SEVERITY', 'SALVAGE']
-                    exprList = ['!{}!'.format(jointbl_prefix + '.SEVERITY'),
-                                '!{}!'.format(jointbl_prefix + '.SALVAGE')]
+                    exprList = ['!{}!'.format(jtbl_prefix + '.SEVERITY'),
+                                '!{}!'.format(jtbl_prefix + '.SALVAGE')]
 
                     # calculate fields in combo table
                     for i in range(0, len(exprList)):
@@ -298,10 +294,13 @@ def WildfireSeverity(args):
                     )
 
                     # delete temporary rasters
-                    for rst in [rst_combined, rst_sevxsalv]:
-                        if arcpy.Exists(rst): arcpy.management.Delete(rst)
+                    for rst in [rst_combined, rst_sevxsalv, salvage,
+                                'rst_sevxsalv_lyr', 'rst_combo_lyr']:
+                        arcpy.management.Delete(rst)
                     arcpy.management.ClearWorkspaceCache()
 
+                else:
+                    display(' ... No wildfires occurred within aoi')
             # close log file
             log.close()
 
@@ -314,7 +313,7 @@ def WildfireSeverity(args):
         log.close()
 
         # release data in memory
-        for rst in [rst_combined, rst_sevxsalv]:
+        for rst in [rst_combined, rst_sevxsalv, salvage]:
             if arcpy.Exists(rst): arcpy.management.Delete(rst)
         arcpy.management.ClearWorkspaceCache()
 
