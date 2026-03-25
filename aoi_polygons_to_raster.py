@@ -2,7 +2,7 @@
 #                       Convert AOI Polygons to Raster
 #----------------------------------------------------------------------------------
 # SCRIPT NAME:  aoi_polygon_to_raster.py
-#               v.2026.0323
+#               v.2026.0325
 #
 # PURPOSE:      Create herd range rasters from polygons and calculate raster
 #               areas.
@@ -128,7 +128,7 @@ def HerdPolygons(args):
 
     except:
         tbinfo = traceback.format_tb(sys.exc_info()[2])[0]
-        error('\nPYTHON ERRORS in main():'
+        error('\nPYTHON ERRORS in HerdPolygons():'
               '\nTraceback Info:    ' + tbinfo +
               '\nError Type:    ' + str(sys.exc_info()[0]) +
               '\nError Info:    ' + str(sys.exc_info()[1]))

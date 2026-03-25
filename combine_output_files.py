@@ -2,7 +2,7 @@
 #                       Combine Output csv Files
 #----------------------------------------------------------------------------------
 # SCRIPT NAME:  combine_output_files.py
-#               v.2026.0317
+#               v.2026.0325
 #
 # PURPOSE:      Combines annual output files into one merged csv
 #
@@ -12,7 +12,7 @@
 #
 # CREATED ON:   March 3, 2026
 #
-# LAST UPDATES: March 17, 2026
+# LAST UPDATES: March 25, 2026
 #
 # NOTES:        tested with ArcGIS PRO 3.6.2
 #               requires Advanced licensing with Spatial Analyst extension
@@ -22,6 +22,7 @@
 import os, sys
 import csv
 from os.path import join as fp
+import arcpy
 from functions import display, error, warning
 
 def main():
@@ -33,17 +34,14 @@ def main():
     # inputs
     combined_output_path = arcpy.GetParameterAsText(0)
     file_name_template = arcpy.GetParameterAsText(1)
-    yearStart = int(arcpy.GetParameterAsText(2))
-    yearEnd = int(arcpy.GetParameterAsText(3))
-    combined_output = arcpy.GetParameterAsText(4)
+    combined_output = arcpy.GetParameterAsText(2)
 
     # Grab list of all fires following template name
-    fileList = []
-    for yr in range(yearStart, yearEnd + 1):
-        inFile = fp(combined_output_path,
-                    file_name_template.replace('****', str(yr)))
-        if os.path.exists(inFile) == True:
-            fileList.append(inFile)
+    arcpy.env.workspace = combined_output_path
+
+    fileSearch = file_name_template + "*.csv"
+    fileList = arcpy.ListFiles(fileSearch)
+    display(' ... {} files found'.format(len(fileList)))
 
     with open(combined_output, 'w') as outfile:
 
@@ -52,7 +50,7 @@ def main():
 
         for filename in fileList:
 
-            with open(filename, 'r') as f:
+            with open(fp(combined_output_path, filename), 'r') as f:
 
                 if save_first_header == False:
                     next(f)
@@ -67,8 +65,6 @@ def main():
                         outfile.write(line)
                         if not line.endswith('\n'):
                             outfile.write('\n')
-
-
 
     outfile.close()
 
