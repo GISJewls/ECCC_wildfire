@@ -2,7 +2,7 @@
 #            Wildfire Metrics: Area Burned and Annual Wildfire Rasters
 #----------------------------------------------------------------------------------
 # SCRIPT NAME:  wildfire_polygons_to_raster.py
-#               v.2026.0323
+#               v.2026.0324
 #
 # PURPOSE:      Calculate wildfire metrics (area) within defined caribou zones.
 #
@@ -126,7 +126,7 @@ def WildfirePolygonsToRaster(args):
             #----------------------------------------------------------------------
             arcpy.env.workspace = outWksp
             arcpy.env.extent = aoi
-            #arcpy.env.mask = aoi
+            arcpy.env.mask = aoi
             arcpy.env.snapRaster = snapRst
             arcpy.env.cellSize = snapRst
 
@@ -213,13 +213,6 @@ def WildfirePolygonsToRaster(args):
                         fStr = '!{}! + "_" + str(int(!{}!)) + "_" + str(int(!{}!))'
 
                     expr = fStr.format(aoi_fld, wf_year_fld, wf_id_fld)
-
-                    arcpy.management.AddField(
-                        in_table = tempFC,
-                        field_name = fld,
-                        field_type = 'TEXT',
-                        field_length = 50
-                    )
 
                     fld_desc = [[fld, 'TEXT', '', 50]]
 
