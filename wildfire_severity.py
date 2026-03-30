@@ -2,7 +2,7 @@
 #                             Wildfire Severity
 #----------------------------------------------------------------------------------
 # SCRIPT NAME:  wildfire_severity.py
-#               v.2026.0323
+#               v.2026.0325
 #
 # PURPOSE:      Extracts wildfire severity within defined caribou zones.  Overlaps
 #               with annual widlfire rasters.
@@ -317,7 +317,7 @@ def WildfireSeverity(args):
 
     except:
         tbinfo = traceback.format_tb(sys.exc_info()[2])[0]
-        error('\nPYTHON ERRORS in CombineRasters():'
+        error('\nPYTHON ERRORS in WildfireSeverity():'
               '\nTraceback Info:    ' + tbinfo +
               '\nError Type:    ' + str(sys.exc_info()[0]) +
               '\nError Info:    ' + str(sys.exc_info()[1]), log)
