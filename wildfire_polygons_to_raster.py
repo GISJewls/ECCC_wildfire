@@ -235,7 +235,7 @@ def WildfirePolygonsToRaster(args):
                         in_table = tempFC,
                         out_table = statTable,
                         statistics_fields = [['POLY_AREA_KM2', 'SUM']],
-                        case_field = ['HERD_YEAR_FIREID'],
+                        case_field = ['HERD_YEAR_FIREID']
                     )
 
                     # -------------------------------------------------------------
